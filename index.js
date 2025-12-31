@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors")
+const cors = require("cors");
 const { nanoid } = require("nanoid");
 const redis = require("./redis");
 const path = require("path");
@@ -10,7 +10,7 @@ const { getNow } = require("./now");
 
 const app = express();
 app.use(express.json());
-app.use(cors())
+app.use(cors());
 
 app.get("/api/healthz", async (req, res) => {
   try {
@@ -21,15 +21,14 @@ app.get("/api/healthz", async (req, res) => {
   }
 });
 
-
 app.post("/api/pastes", async (req, res) => {
   try {
-    console.log(req.body)
+    console.log(req.body);
     const { content, ttl_seconds, max_views } = req.body;
 
     if (typeof content !== "string" || !content.trim()) {
       return res.status(400).json({
-        error: "content is required and must be a non-empty string"
+        error: "content is required and must be a non-empty string",
       });
     }
 
@@ -38,7 +37,7 @@ app.post("/api/pastes", async (req, res) => {
       (!Number.isInteger(ttl_seconds) || ttl_seconds < 1)
     ) {
       return res.status(400).json({
-        error: "ttl_seconds must be an integer >= 1"
+        error: "ttl_seconds must be an integer >= 1",
       });
     }
 
@@ -47,12 +46,15 @@ app.post("/api/pastes", async (req, res) => {
       (!Number.isInteger(max_views) || max_views < 1)
     ) {
       return res.status(400).json({
-        error: "max_views must be an integer >= 1"
+        error: "max_views must be an integer >= 1",
       });
     }
+    console.log("before nano id done");
 
     const id = nanoid(10);
     const now = Date.now();
+
+    console.log("before nano id done");
 
     const paste = {
       id,
@@ -60,16 +62,13 @@ app.post("/api/pastes", async (req, res) => {
       created_at: now,
       expires_at: ttl_seconds ? now + ttl_seconds * 1000 : null,
       max_views: max_views ?? null,
-      views: 0
+      views: 0,
     };
 
+    console.log("after paste id done");
+
     if (ttl_seconds) {
-      await redis.set(
-        `paste:${id}`,
-        JSON.stringify(paste),
-        "EX",
-        ttl_seconds
-      );
+      await redis.set(`paste:${id}`, JSON.stringify(paste), "EX", ttl_seconds);
     } else {
       await redis.set(`paste:${id}`, JSON.stringify(paste));
     }
@@ -77,7 +76,7 @@ app.post("/api/pastes", async (req, res) => {
     // ---------- Response ----------
     return res.status(201).json({
       id,
-      url: `${req.protocol}://${req.get("host")}/p/${id}`
+      url: `${req.protocol}://${req.get("host")}/p/${id}`,
     });
   } catch (err) {
     return res.status(500).json({ error: "internal server error" });
@@ -106,7 +105,7 @@ app.get("/api/pastes/:id", async (req, res) => {
   }
 
   const updatedPaste = {
-    ...paste
+    ...paste,
   };
 
   await redis.set(key, updatedPaste); // no stringify needed
@@ -121,7 +120,7 @@ app.get("/api/pastes/:id", async (req, res) => {
     remaining_views: remainingViews,
     expires_at: updatedPaste.expires_at
       ? new Date(updatedPaste.expires_at).toISOString()
-      : null
+      : null,
   });
 });
 
@@ -165,7 +164,7 @@ app.get("/p/:id", async (req, res) => {
 
   const updatedPaste = {
     ...paste,
-    views: paste.views + 1
+    views: paste.views + 1,
   };
 
   await redis.set(key, updatedPaste);
@@ -177,13 +176,8 @@ app.get("/p/:id", async (req, res) => {
   return res.send(html);
 });
 
-
 function escapeHtml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-
-app.listen(process.env.PORT)
+app.listen(process.env.PORT);
