@@ -68,10 +68,16 @@ app.post("/api/pastes", async (req, res) => {
     console.log("after paste id done");
 
     if (ttl_seconds) {
-      await redis.set(`paste:${id}`, JSON.stringify(paste), "EX", ttl_seconds);
+      console.log("set is here 1");
+      await redis.set(`paste:${id}`, JSON.stringify(paste), {
+        ex: ttl_seconds,
+      });
+      console.log("set is here 2");
     } else {
       await redis.set(`paste:${id}`, JSON.stringify(paste));
     }
+
+    console.log("set is here");
 
     // ---------- Response ----------
     return res.status(201).json({
